@@ -1,11 +1,15 @@
 Function RebootComputer {
 param([CmdletBinding()]
 [String]$ComputerName,
-[Parameter(ParameterSetName="ServiceOptions",
+[Parameter(ParameterSetName="ServiceOption1",
 Position=0,
 Mandatory = $False,
 HelpMessage="Waits for Exchange Services to come online before completion")]
 [Switch]$IsExchangeServer,
+[Parameter(ParameterSetName="ServiceOption2",
+Position=0,
+Mandatory = $False)
+HelpMessage="Waits for Automatic Services to come online before completion")]
 [Switch]$WaitForServicesToStart
 )
 
