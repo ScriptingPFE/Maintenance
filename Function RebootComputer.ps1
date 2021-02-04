@@ -1,8 +1,8 @@
 ﻿Function RebootComputer {
 param([CmdletBinding()]
 $ComputerName,
-[bool]$IsExchangeServer,
-[bool]$WaitForServicesToStart
+[Switch]$IsExchangeServer,
+[Switch]$WaitForServicesToStart
 )
 
 <#
@@ -23,12 +23,12 @@ $ComputerName,
     .Parameters
         [string]ComputerName Lists the name of the computer to reboot
 
-        [Bool]WaitForServicesToStart. If this parameter is set the script will first query the system
+        [Switch]WaitForServicesToStart. If this parameter is set the script will first query the system
                for running services with an automatic start up type, then issue the reboot to the system. Once
                the server has reported a reboot has completed via a system eventid 6013, the script will wait for
                the running services discovered at the start of the script to come on line
             
-        [Bool]IsExchangeServer. If this parameter is set to true the script will then check for
+        [Switch]IsExchangeServer. If this parameter is set to true the script will then check for
                the required Exchange Services on the system before reporting the system is avialable.
      
 
