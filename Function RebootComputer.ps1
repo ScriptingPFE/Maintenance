@@ -1,6 +1,10 @@
-﻿Function RebootComputer {
+Function RebootComputer {
 param([CmdletBinding()]
-$ComputerName,
+[String]$ComputerName,
+[Parameter(ParameterSetName="ServiceOptions",
+Position=0,
+Mandatory = $False,
+HelpMessage="Waits for Exchange Services to come online before completion")]
 [Switch]$IsExchangeServer,
 [Switch]$WaitForServicesToStart
 )
@@ -62,7 +66,7 @@ $ComputerName,
     if($continuereboot) {
         if($WaitForServicesToStart) {
         
-            $RunningServices =  Invoke-Command -ComputerName $computername -ScriptBlock {Get-Service  | where {$_.StartType -eq "automatic" -and $_.Status -eq "running" } | Select-Object -ExpandProperty name}
+            $RunningServices =  Invoke-Command -ComputerName $computername -ScriptBlock {Get-Service  | Where-Object {$_.StartType -eq "automatic" -and $_.Status -eq "running" } | Select-Object -ExpandProperty name}
             
         }
         $PercentComplete = $PercentComplete + 5
@@ -72,7 +76,6 @@ $ComputerName,
          Try {
         
             Write-host -ForegroundColor yellow "$((Get-date).Tostring()): Issuing reboot for Computer: " -NoNewline; write-host $ComputerName 
-            $ExecutionTime= Get-date
             $rebootissued = $false
             $RebootTimeStamp = (Get-date).AddMinutes(-1)
             Invoke-command -ComputerName $ComputerName -ScriptBlock { Restart-Computer -Force} -ErrorVariable restarterr -ErrorAction SilentlyContinue
@@ -111,13 +114,9 @@ $ComputerName,
                 Do {
               
                       $CheckLastSystemReboot = Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-                               $FilterHash = @{
-                                                LogName='System'
-                                                ID= 1074
-                                                StartTime = $Using:ExecutionTime
-                                            }
+                               $Date= (Get-WmiObject Win32_operatingSystem | Select-Object -ExpandProperty LastBootUpTime)
+                               Get-date "$($($Date.Split(".")[0]).substring(0,4))/$(($Date.Split(".")[0]).substring(4,2))/$(($Date.Split(".")[0]).substring(6,2)) $(($Date.Split(".")[0]).substring(8,2)):$(($Date.Split(".")[0]).substring(10,2)):$(($Date.Split(".")[0]).substring(12,2))"
                                $ErrorActionPreference = 'SilentlyContinue'
-                               $Query= (Get-WinEvent -FilterHashtable $FilterHash  -ErrorAction SilentlyContinue| Sort-Object Timecreated -Descending | Select-Object -first 1)
                                $ErrorActionPreference = 'Continue'
                            
                       } -ErrorAction SilentlyContinue
@@ -205,7 +204,7 @@ $ComputerName,
                             $HealthCntrFail = $True
                          }
 
-                         if(($IndexedServices.Values | select -Unique) -eq $true){
+                         if(($IndexedServices.Values | Select-Object -Unique) -eq $true){
                             $RequiredServiceUp = $true
                          }
                          $ReqSvcCntr ++
