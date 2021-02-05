@@ -125,7 +125,7 @@ HelpMessage="Waits for Automatic Services to come online before completion")]
                            
                       } -ErrorAction SilentlyContinue
               
-                      if($RebootTimeStamp -gt $CheckLastSystemReboot ) {
+                      if($RebootTimeStamp -gt) {
                           Start-Sleep 10
                       }
 
