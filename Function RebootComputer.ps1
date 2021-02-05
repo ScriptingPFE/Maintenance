@@ -1,15 +1,12 @@
+#VERSION: 2.1
 Function RebootComputer {
 param([CmdletBinding()]
 [String]$ComputerName,
-[Parameter(ParameterSetName="ServiceOption1",
+[Parameter(ParameterSetName="ServiceOptions",
 Position=0,
 Mandatory = $False,
 HelpMessage="Waits for Exchange Services to come online before completion")]
 [Switch]$IsExchangeServer,
-[Parameter(ParameterSetName="ServiceOption2",
-Position=0,
-Mandatory = $False)
-HelpMessage="Waits for Automatic Services to come online before completion")]
 [Switch]$WaitForServicesToStart
 )
 
@@ -18,7 +15,7 @@ HelpMessage="Waits for Automatic Services to come online before completion")]
         Reboots a system and ensures the system is operational before continuing
         NAME: RebootComputer
         AUTHOR: Eric Powers 
-        VERSION: 2.0
+        VERSION: 2.1
 
     .DESCRIPTION
         This script first checks for connectivity to the system 
@@ -70,7 +67,7 @@ HelpMessage="Waits for Automatic Services to come online before completion")]
     if($continuereboot) {
         if($WaitForServicesToStart) {
         
-            $RunningServices =  Invoke-Command -ComputerName $computername -ScriptBlock {Get-Service  | Where-Object {$_.StartType -eq "automatic" -and $_.Status -eq "running" } | Select-Object -ExpandProperty name}
+            $RunningServices =  Invoke-Command -ComputerName $computername -ScriptBlock {Get-Service  | where {$_.StartType -eq "automatic" -and $_.Status -eq "running" } | Select-Object -ExpandProperty name}
             
         }
         $PercentComplete = $PercentComplete + 5
@@ -80,8 +77,9 @@ HelpMessage="Waits for Automatic Services to come online before completion")]
          Try {
         
             Write-host -ForegroundColor yellow "$((Get-date).Tostring()): Issuing reboot for Computer: " -NoNewline; write-host $ComputerName 
+            $ExecutionTime= Get-date
             $rebootissued = $false
-            $RebootTimeStamp = (Get-date).AddMinutes(-1)
+            $RebootTimeStamp = (Get-date).AddMinutes(-5).ToUniversalTime()
             Invoke-command -ComputerName $ComputerName -ScriptBlock { Restart-Computer -Force} -ErrorVariable restarterr -ErrorAction SilentlyContinue
             if([string]$restarterr -notmatch "\w")        {
                 Write-host -ForegroundColor yellow "$((Get-date).Tostring()): Reboot successfully issued reboot for Computer: " -NoNewline; write-host $ComputerName 
@@ -118,14 +116,12 @@ HelpMessage="Waits for Automatic Services to come online before completion")]
                 Do {
               
                       $CheckLastSystemReboot = Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-                               $Date= (Get-WmiObject Win32_operatingSystem | Select-Object -ExpandProperty LastBootUpTime)
-                               Get-date "$($($Date.Split(".")[0]).substring(0,4))/$(($Date.Split(".")[0]).substring(4,2))/$(($Date.Split(".")[0]).substring(6,2)) $(($Date.Split(".")[0]).substring(8,2)):$(($Date.Split(".")[0]).substring(10,2)):$(($Date.Split(".")[0]).substring(12,2))"
-                               $ErrorActionPreference = 'SilentlyContinue'
-                               $ErrorActionPreference = 'Continue'
+                               $Date= (Get-WmiObject Win32_operatingSystem | select -ExpandProperty LastBootUpTime)
+                               (Get-date "$($($Date.Split(".")[0]).substring(0,4))/$(($Date.Split(".")[0]).substring(4,2))/$(($Date.Split(".")[0]).substring(6,2)) $(($Date.Split(".")[0]).substring(8,2)):$(($Date.Split(".")[0]).substring(10,2)):$(($Date.Split(".")[0]).substring(12,2))").ToUniversalTime()
                            
                       } -ErrorAction SilentlyContinue
               
-                      if($RebootTimeStamp -gt) {
+                      if($RebootTimeStamp -gt  $CheckLastSystemReboot ) {
                           Start-Sleep 10
                       }
 
@@ -208,7 +204,7 @@ HelpMessage="Waits for Automatic Services to come online before completion")]
                             $HealthCntrFail = $True
                          }
 
-                         if(($IndexedServices.Values | Select-Object -Unique) -eq $true){
+                         if(($IndexedServices.Values | select -Unique) -eq $true){
                             $RequiredServiceUp = $true
                          }
                          $ReqSvcCntr ++
