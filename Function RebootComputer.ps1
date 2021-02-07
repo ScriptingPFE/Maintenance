@@ -40,8 +40,8 @@ HelpMessage="Waits for Exchange Services to come online before completion")]
                
     .Syntax
          
-        RebootComputer -ComputerName XYX -IsExchangeServer:$true
-        RebootComputer -ComputerName XYX -WaitForServicesToStart:$true
+        RebootComputer -ComputerName XYX -IsExchangeServer
+        RebootComputer -ComputerName XYX -WaitForServicesToStart
       
 
     .NOTES
