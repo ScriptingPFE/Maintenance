@@ -249,6 +249,13 @@ $ComputerName
     } 
 }
 
+Function Disable-CredsSP {
+Param(
+$ComputerName
+)
+    Invoke-Command -ScriptBlock { Disable-WSManCredSSP -Role Server } -ComputerName $Computername | Out-Null
+}
+
 Function RebootComputer {
     param([CmdletBinding()]
         [String]$ComputerName,
@@ -601,15 +608,18 @@ Copy-PackageToSystem -ComputerName $AvailableServers -SourceDirectory $SourceDir
 Foreach ($Computername in $ServersToUpdate.keys){
     $InstallState = Get-UpdatePackageInstallState -ComputerName $ComputerName  -PackageOrHotFixID $PackageOrHotFixID
     if(!$InstallState.IsInstalled){
-
+        
+        Enable-CredsSP -ComputerName $ComputerName
+        
         if($ServersToUpdate[$Computername].RebootPending){
             RebootComputer -ComputerName $Computername -IsExchangeServer
             Start-Sleep -Seconds 10
         }
+        
+        Disable-CredsSP -ComputerName $ComputerName
     
         Install-UpdatePackage -ComputerName $ComputerName -PackageFileName $PackageFileName -Directory $TargetDirectory -Credentials $Credentials -PackageOrHotFixID $PackageOrHotFixID
     }
 
 }
-
 
