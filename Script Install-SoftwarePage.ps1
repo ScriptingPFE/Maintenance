@@ -616,9 +616,9 @@ Foreach ($Computername in $ServersToUpdate.keys){
             Start-Sleep -Seconds 10
         }
         
-        Disable-CredsSP -ComputerName $ComputerName
-    
+
         Install-UpdatePackage -ComputerName $ComputerName -PackageFileName $PackageFileName -Directory $TargetDirectory -Credentials $Credentials -PackageOrHotFixID $PackageOrHotFixID
+        Disable-CredsSP -ComputerName $ComputerName
     }
 
 }
