@@ -1,4 +1,18 @@
-$scriptversion= 1.2
+$Global:scriptversion = 1.2
+Function Get-CurrentScript {
+param($uri)
+if(Test-NetConnection -ComputerName raw.githubusercontent.com -Port 443 -ErrorAction SilentlyContinue -InformationLevel Quiet ){
+    [Double]$CurrentPublishedVersion = (Invoke-WebRequest -uri $uri -MaximumRedirection 100  ).parsedhtml.body.innertext.substring(16,4).trim()
+
+    if($CurrentPublishedVersion -gt [double]$Global:scriptversion){
+        Write-host -ForegroundColor Yellow "The script you are currrently running has been updated. Please visit the Github link below for the current version of the code."
+        Write-Host $uri
+        pause
+    }
+
+}
+}
+
 Function Copy-PackageToSystem {
     param(
         [Parameter(Mandatory = $true,
@@ -274,7 +288,6 @@ Function RebootComputer {
         NAME: RebootComputer
         AUTHOR: Eric Powers 
         VERSION: 2.0
-
     .DESCRIPTION
         This script first checks for connectivity to the system 
         
@@ -285,7 +298,6 @@ Function RebootComputer {
      
     .Parameters
         [string]ComputerName Lists the name of the computer to reboot
-
         [Switch]WaitForServicesToStart. If this parameter is set the script will first query the system
                for running services with an automatic start up type, then issue the reboot to the system. Once
                the server has reported a reboot has completed via a system eventid 6013, the script will wait for
@@ -294,14 +306,12 @@ Function RebootComputer {
         [Switch]IsExchangeServer. If this parameter is set to true the script will then check for
                the required Exchange Services on the system before reporting the system is avialable.
      
-
                
     .Syntax
          
         RebootComputer -ComputerName XYX -IsExchangeServer
         RebootComputer -ComputerName XYX -WaitForServicesToStart
       
-
     .NOTES
         20200310: v1.0 - Initial Release
         20200601: v1.1 - Updated to improve test case success for Exchange Services
@@ -572,6 +582,8 @@ Function Get-ExServers {
     Foreach ($server in $msExchServer) { if ($server.properties.Keys -contains 'Admindisplayname') { $server.properties.admindisplayname } }
 }
 
+$ScritpUri = 'https://raw.githubusercontent.com/ScriptingPFE/Maintenance/main/Script%20Install-SoftwarePage.ps1'
+Get-CurrentScript -uri $ScritpUri
 
 $ErrorActionPreference   = 'Stop'
 $Credentials = Get-Credential -UserName "$($env:USERDNSDOMAIN.Substring(0,$($env:USERDNSDOMAIN.indexof("."))))\$env:username" -Message "Enter Credential"
@@ -579,33 +591,23 @@ $PackageFileName = Read-Host "Enter the Package File Name to install. Example Ex
 $SourceDirectory = Read-Host "Enter the UNC path to the $ExchangeISO file for the install. Example \\ComputerName\NetworkShare"
 $TargetDirectory  = Read-Host "Enter the target directory on the Server you wish to install the exchange CU on. Example: D:\Updates"
 $PackageOrHotFixID = Read-Host "Enter the KB or Hotfixid. Example KB5000871"
-
 [array]$ExchangeServers = Get-ExServers
 $PSconnectionServer = [string]::Empty
-
 $AvailableServers = foreach($ComputerName in $ExchangeServers){
     if(Test-Connection $ComputerName -Count 1 -ErrorAction SilentlyContinue){$ComputerName}
-
 }
 $PSconnectionServer = $AvailableServers[0]
-
 Import-PSSession ( New-PSSession -ConfigurationName Microsoft.exchange -ConnectionUri "Http://$PSconnectionServer/Powershell" -WarningAction SilentlyContinue -InformationAction SilentlyContinue -Name ExGuid9999) -AllowClobber -WarningAction SilentlyContinue -InformationAction SilentlyContinue | Out-Null
-
-
 $PSconnectionServer = $AvailableServers[0]
 $AvailableServers = foreach($ComputerName in $servers){
     if(Test-Connection $ComputerName -Count 1 -ErrorAction SilentlyContinue){$ComputerName}
-
 }
-
 $PendingRebootStatuses = Get-PendingRebootStatus -ComputerName $AvailableServers
 $ServersToUpdate = @{}
 Foreach ($PendingRebootStatus in $PendingRebootStatuses){
     $ServersToUpdate.add($PendingRebootStatus.Computername,$PendingRebootStatus)
 }
-
 Copy-PackageToSystem -ComputerName $AvailableServers -SourceDirectory $SourceDirectory -PackageFileName $PackageFileName -TargetDirectory $TargetDirectory -asjob -Credentials $Credentials
-
 Foreach ($Computername in $ServersToUpdate.keys){
     $InstallState = Get-UpdatePackageInstallState -ComputerName $ComputerName  -PackageOrHotFixID $PackageOrHotFixID
     if(!$InstallState.IsInstalled){
@@ -617,10 +619,8 @@ Foreach ($Computername in $ServersToUpdate.keys){
             Start-Sleep -Seconds 10
         }
         
-
-        Install-UpdatePackage -ComputerName $ComputerName -PackageFileName $PackageFileName -Directory $TargetDirectory -Credentials $Credentials -PackageOrHotFixID $PackageOrHotFixID
         Disable-CredsSP -ComputerName $ComputerName
+    
+        Install-UpdatePackage -ComputerName $ComputerName -PackageFileName $PackageFileName -Directory $TargetDirectory -Credentials $Credentials -PackageOrHotFixID $PackageOrHotFixID
     }
-
 }
-
