@@ -1,3 +1,4 @@
+$scriptversion= 1.2
 Function Copy-PackageToSystem {
     param(
         [Parameter(Mandatory = $true,
