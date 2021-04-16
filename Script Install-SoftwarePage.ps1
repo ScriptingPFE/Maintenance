@@ -1,17 +1,19 @@
 $Global:scriptversion = 1.2
 Function Get-CurrentScript {
 param($uri)
-if(Test-NetConnection -ComputerName raw.githubusercontent.com -Port 443 -ErrorAction SilentlyContinue -InformationLevel Quiet ){
-    [Double]$CurrentPublishedVersion = (Invoke-WebRequest -uri $uri -MaximumRedirection 100  ).parsedhtml.body.innertext.substring(16,4).trim()
+    if(Test-NetConnection -ComputerName raw.githubusercontent.com -Port 443 -ErrorAction SilentlyContinue -InformationLevel Quiet ){
+        $Script = (Invoke-WebRequest -uri $Uri -MaximumRedirection 100  ).parsedhtml.body.innertext
+        [Double]$CurrentPublishedVersion = [double]$([regex]::Match($Script.ParsedHtml.body.innerText,"Global:scriptversion = \d.\d") -replace 'Global:scriptversion = ','')
 
-    if($CurrentPublishedVersion -gt [double]$Global:scriptversion){
-        Write-host -ForegroundColor Yellow "The script you are currrently running has been updated. Please visit the Github link below for the current version of the code."
-        Write-Host $uri
-        pause
+        if($CurrentPublishedVersion -gt [double]$Global:scriptversion){
+            Write-host -ForegroundColor Yellow "The script you are currrently running has been updated. Please visit the Github link below for the current version of the code."
+            Write-Host $uri
+            pause
+        }
+
     }
+}
 
-}
-}
 
 Function Copy-PackageToSystem {
     param(
